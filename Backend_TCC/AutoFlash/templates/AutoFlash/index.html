@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Flashcards</title>
+    <script>
+        async function gerarFlashcards() {
+            const texto = document.getElementById('texto').value;
+            const response = await fetch('/autoflash/flashcards/gerar_flashcards/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ texto: texto })
+            });
+
+            if (response.ok) {
+                alert('Flashcards gerados com sucesso!');
+                carregarFlashcards();
+            } else {
+                alert('Erro ao gerar flashcards');
+            }
+        }
+
+        async function carregarFlashcards() {
+            const response = await fetch('/autoflash/flashcards/');
+            const flashcards = await response.json();
+            const flashcardList = document.getElementById('flashcard-list');
+            flashcardList.innerHTML = '';
+
+            flashcards.forEach(card => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Pergunta: ${card.pergunta} | Resposta: ${card.resposta}`;
+                flashcardList.appendChild(listItem);
+            });
+        }
+
+        window.onload = carregarFlashcards;
+    </script>
+</head>
+<body>
+    <h1>Gerador de Flashcards</h1>
+    <textarea id="texto" rows="4" cols="50" placeholder="Digite um resumo aqui..."></textarea><br>
+    <button onclick="gerarFlashcards()">Gerar Flashcards</button>
+    <h2>Flashcards Gerados:</h2>
+    <ul id="flashcard-list"></ul>
+</body>
+</html>
