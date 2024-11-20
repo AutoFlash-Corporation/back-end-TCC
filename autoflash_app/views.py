@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -20,15 +21,32 @@ def register_user(request):
 def login_user(request):
     if request.method == 'POST':
         serializer = LoginSerializer(data=request.data)
+
+         #validação dos dados de entrada
+
         if serializer.is_valid():
-            user = serializer.validated_data
-            login(request, user)  # Login the user (optional, for session-based auth)
-            refresh = RefreshToken.for_user(user)
-            return Response({
+
+            username = serializer.validated_data.get('username')
+            password = serializer.validated_data.get('password')
+
+
+            user = authenticate(username=username, password=password)
+
+            if user is not None:
+    
+                refresh = RefreshToken.for_user(user)
+
+                return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token)
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_200_OK)
+            else: 
+                return Response(
+                    {"detail": "Invalid credentials"}, 
+                    status=status.HTTP_401_UNAUTHORIZED) 
+        
+    #caso os dados não sejam válidos
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Cadastrar Conteúdo
 @api_view(['POST'])

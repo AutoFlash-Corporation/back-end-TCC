@@ -9,6 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
+
         user = CustomUser.objects.create_user(
             validated_data['username'],
             validated_data['email'],
@@ -18,14 +19,19 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True)
 
     def validate(self, data):
+        print(f"Data recebida para login: {data}") # DEBUG
         user = authenticate(username=data['username'], password=data['password'])
         if not user:
             raise serializers.ValidationError("Invalid credentials")
-        return user
+        return {
+            'username': user.username,
+            'email': user.email,
+            'nome': user.nome,
+        }
 
 class ConteudoSerializer(serializers.ModelSerializer):
     class Meta:
