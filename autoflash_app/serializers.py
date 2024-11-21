@@ -19,19 +19,15 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True)
+    username = serializers.CharField()
+    password = serializers.CharField()
 
     def validate(self, data):
-        print(f"Data recebida para login: {data}") # DEBUG
         user = authenticate(username=data['username'], password=data['password'])
         if not user:
             raise serializers.ValidationError("Invalid credentials")
-        return {
-            'username': user.username,
-            'email': user.email,
-            'nome': user.nome,
-        }
+        return user
+        
 
 class ConteudoSerializer(serializers.ModelSerializer):
     class Meta:
