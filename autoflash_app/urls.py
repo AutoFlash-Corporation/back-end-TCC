@@ -9,10 +9,12 @@ from .views import (
     atualizar_conteudo,
     excluir_conteudo,
     atualizar_flashcard,
-    excluir_flashcard,
+    excluir_flashcard, 
+    gerar_conteudo
 )
 
 urlpatterns = [
+    path('gerar-conteudo/', gerar_conteudo, name='gerar_conteudo'),
     path('register/', register_user, name='register'),
     path('login/', login_user, name='login'),
     

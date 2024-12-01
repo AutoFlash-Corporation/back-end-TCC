@@ -7,6 +7,107 @@ from .serializers import UserSerializer, LoginSerializer, ConteudoSerializer, Fl
 from .models import Conteudo, Flashcard
 from django.contrib.auth import login
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.http import JsonResponse
+import google.generativeai as genai
+import json
+import logging
+import re
+
+# Definindo o esquema de pergunta e resposta
+from typing_extensions import TypedDict
+
+
+class Flashcard(TypedDict):
+    pergunta: str
+    resposta: str
+
+
+logger = logging.getLogger(__name__)
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])  # Apenas usuários autenticados podem acessar
+def gerar_conteudo(request):
+    """
+    Endpoint para gerar conteúdo usando o modelo Gemini.
+    O cliente deve enviar o prompt no corpo da solicitação.
+    """
+    try:
+        # Obter os parâmetros adicionais: nível e número de cards
+        nivel = request.data.get("nivel", "medio").lower()
+        numero_cards = request.data.get("numero_cards")
+
+        # Validar o número de cards (entre 5 e 15)
+        if not (5 <= numero_cards <= 15):
+            return Response({"error": "O número de cards deve ser entre 5 e 15."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validar o nível de dificuldade
+        niveis_validos = ["facil", "medio", "dificil"]
+        if nivel not in niveis_validos:
+            return Response({"error": "O nível de dificuldade deve ser 'facil', 'medio' ou 'dificil'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Configurar a API Gemini
+        genai.configure(api_key="AIzaSyCxk_fIvuQ1xR_vxdjGcQIEd9IlGRwp8rg")
+
+        # Obter o conteúdo (texto base) do corpo da requisição
+        conteudo = request.data.get("conteudo", "")
+        if not conteudo:
+            return Response({"error": "O campo 'conteudo' é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Montar o prompt incluindo o conteúdo, nível e número de cards
+        prompt = f"Crie {numero_cards} perguntas, com as respostas, de nível '{nivel}' com base no seguinte conteúdo: {conteudo}"
+
+        # Usar o modelo gemini-exp-1121 diretamente
+        model_name = "gemini-exp-1121"
+
+        # Instanciar o modelo
+        model = genai.GenerativeModel(model_name)
+
+        # Gerar o conteúdo com o prompt fornecido
+        response = model.generate_content(prompt)
+
+        # Supondo que o modelo retorne as perguntas e respostas em um formato específico
+        generated_content = response.text  # O conteúdo gerado pelo modelo
+
+        # Processar o conteúdo gerado para transformá-lo em um formato JSON (perguntas e respostas)
+        flashcards = []
+        lines = generated_content.splitlines()
+
+        # Loop para processar as perguntas e respostas
+        for i in range(0, len(lines), 2):
+            question_line = lines[i].strip()
+            answer_line = lines[i+1].strip() if i+1 < len(lines) else ""
+
+            # Remover asteriscos e outras formatações extras
+            question = question_line.replace("**", "").replace("Pergunta", "").strip()
+            answer = answer_line.replace("**", "").replace("Resposta", "").strip()
+
+            # Adicionar ao flashcard apenas se a pergunta e resposta não estiverem vazias
+            if question and answer:
+                flashcards.append({
+                    "question": question,
+                    "answer": answer
+                })
+
+            # Se o número de cards atingiu o limite, parar de adicionar
+            if len(flashcards) >= numero_cards:
+                break
+
+        # Retornar o JSON com as perguntas e respostas
+        return Response({"flashcards": flashcards}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    
+    
+    
+    
+    
+    
+      
+    
+    
 
 @api_view(['POST'])
 def register_user(request):
