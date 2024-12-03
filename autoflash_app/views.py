@@ -13,9 +13,13 @@ import json
 import logging
 import re
 import openai
+from dotenv import load_dotenv
+import os
+
 
 admin.site.register(Flashcard)
-
+# Carrega as variáveis do arquivo .env
+load_dotenv()
 
 # Configuração do logger
 logger = logging.getLogger(__name__)
@@ -72,7 +76,9 @@ def gerar_flashcard(request):
         """
         
         # Configurar a API da OpenAI
-        openai.api_key = "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"
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+
+        
         # Fazer a chamada para o modelo GPT
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",  # ou "gpt-3.5-turbo"
