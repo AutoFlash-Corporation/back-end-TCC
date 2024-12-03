@@ -22,8 +22,8 @@ class Conteudo(models.Model):
 class Flashcard(models.Model):
     pergunta = models.TextField()
     resposta = models.TextField()
-    conteudo = models.ForeignKey(Conteudo, null=True, blank=True, on_delete=models.SET_NULL)
-    usuario = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-
+    conteudo = models.ForeignKey(Conteudo, on_delete=models.CASCADE)  # Remove null=True e blank=True
+    usuario = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='flashcards')
+    
     def __str__(self):
-        return f"Flashcard: {self.pergunta[:30]}..."
+        return f"Flashcard: {self.pergunta[:30]}..."        

@@ -8,28 +8,29 @@ from .models import Conteudo, Flashcard
 from django.contrib.auth import login
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
-import google.generativeai as genai
+from django.contrib import admin
 import json
 import logging
 import re
+import openai
+
+admin.site.register(Flashcard)
+
+
+# Configuração do logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 # Definindo o esquema de pergunta e resposta
 from typing_extensions import TypedDict
 
-
-class Flashcard(TypedDict):
-    pergunta: str
-    resposta: str
-
-
-logger = logging.getLogger(__name__)
 
 
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])  # Apenas usuários autenticados podem acessar
-def gerar_conteudo(request):
+def gerar_flashcard(request):
     """
     Endpoint para gerar conteúdo usando o modelo Gemini.
     O cliente deve enviar o prompt no corpo da solicitação.
@@ -38,69 +39,99 @@ def gerar_conteudo(request):
         # Obter os parâmetros adicionais: nível e número de cards
         nivel = request.data.get("nivel", "medio").lower()
         numero_cards = request.data.get("numero_cards")
+        usuario = request.user  # Usando o usuário autenticado
+        conteudo_id = request.data.get("conteudo")  # Recebe o ID do conteúdo
 
+        
         # Validar o número de cards (entre 5 e 15)
         if not (5 <= numero_cards <= 15):
             return Response({"error": "O número de cards deve ser entre 5 e 15."}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         # Validar o nível de dificuldade
         niveis_validos = ["facil", "medio", "dificil"]
         if nivel not in niveis_validos:
             return Response({"error": "O nível de dificuldade deve ser 'facil', 'medio' ou 'dificil'."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Configurar a API Gemini
-        genai.configure(api_key="AIzaSyCxk_fIvuQ1xR_vxdjGcQIEd9IlGRwp8rg")
-
-        # Obter o conteúdo (texto base) do corpo da requisição
-        conteudo = request.data.get("conteudo", "")
-        if not conteudo:
-            return Response({"error": "O campo 'conteudo' é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+         # Buscar o conteúdo no banco de dados pelo ID
+        try:
+            conteudo_obj = Conteudo.objects.get(id=conteudo_id, usuario=usuario)
+        except Conteudo.DoesNotExist:
+            return Response({"error": "Conteúdo não encontrado ou não pertence ao usuário."}, status=status.HTTP_404_NOT_FOUND)
+        
+        conteudo_texto = conteudo_obj.descricao  # Pegar a descrição do conteúdo
+        
+        
         # Montar o prompt incluindo o conteúdo, nível e número de cards
-        prompt = f"Crie {numero_cards} perguntas, com as respostas, de nível '{nivel}' com base no seguinte conteúdo: {conteudo}"
+        prompt = f"""
+        Baseado no seguinte conteúdo:
+        {conteudo_texto}
 
-        # Usar o modelo gemini-exp-1121 diretamente
-        model_name = "gemini-exp-1121"
-
-        # Instanciar o modelo
-        model = genai.GenerativeModel(model_name)
-
-        # Gerar o conteúdo com o prompt fornecido
-        response = model.generate_content(prompt)
-
-        # Supondo que o modelo retorne as perguntas e respostas em um formato específico
-        generated_content = response.text  # O conteúdo gerado pelo modelo
-
-        # Processar o conteúdo gerado para transformá-lo em um formato JSON (perguntas e respostas)
+        Gere {numero_cards} flashcards de nível '{nivel}'. Cada flashcard deve ter uma pergunta e uma resposta claras e diretas. Estruture no seguinte formato:
+        Pergunta: ...
+        Resposta: ...
+        """
+        
+        # Configurar a API da OpenAI
+        openai.api_key = "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"
+        # Fazer a chamada para o modelo GPT
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",  # ou "gpt-3.5-turbo"
+            messages=[{
+                "role": "system", "content": "Você é um assistente que gera flashcards com base em conteúdos fornecidos."
+            }, {
+                "role": "user", "content": prompt
+            }],
+            max_tokens=1500,
+            temperature=0.7
+        )
+        
+        # Processar o conteúdo gerado
+        generated_content = response['choices'][0]['message']['content']
+        print(f"Conteúdo gerado: {generated_content}")
+        logger.info(f"Conteúdo gerado: {generated_content}")
+        
+        
+    
+        
+        # Processar o conteúdo gerado para transformá-lo em um formato de flashcard
         flashcards = []
-        lines = generated_content.splitlines()
+        lines = generated_content.strip().split('\n')
+        card_id = 1  # Iniciando o ID dos flashcards
 
-        # Loop para processar as perguntas e respostas
-        for i in range(0, len(lines), 2):
-            question_line = lines[i].strip()
-            answer_line = lines[i+1].strip() if i+1 < len(lines) else ""
-
-            # Remover asteriscos e outras formatações extras
-            question = question_line.replace("**", "").replace("Pergunta", "").strip()
-            answer = answer_line.replace("**", "").replace("Resposta", "").strip()
-
-            # Adicionar ao flashcard apenas se a pergunta e resposta não estiverem vazias
+        for i in range(0, len(lines), 2):  # Cada par de linhas será uma pergunta e uma resposta
+            title_line = lines[i].strip()
+            question_line = lines[i + 1].strip() if i + 1 < len(lines) else ""
+            answer_line = lines[i + 2].strip() if i + 2 < len(lines) else ""
+            
+            # Extrair a pergunta e resposta do conteúdo
+            question = re.sub(r"^Pergunta: ", "", question_line).strip()
+            answer = re.sub(r"^Resposta: ", "", answer_line).strip()
+            
+            
             if question and answer:
                 flashcards.append({
-                    "question": question,
-                    "answer": answer
+                    "id": card_id,  # Atribuindo um ID único
+                    "question": question,  # Aqui, mantemos apenas a pergunta
+                    "answer": answer  # Aqui, mantemos apenas a resposta
                 })
+                card_id += 1  # Incrementando o ID para o próximo flashcard
 
-            # Se o número de cards atingiu o limite, parar de adicionar
-            if len(flashcards) >= numero_cards:
-                break
-
-        # Retornar o JSON com as perguntas e respostas
+        # Salvar os flashcards no banco de dados
+        for flashcard in flashcards:
+            Flashcard.objects.create(
+                pergunta=flashcard['question'],
+                resposta=flashcard['answer'],
+                conteudo=conteudo_obj,
+                usuario=usuario
+            )
+            
+            
         return Response({"flashcards": flashcards}, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)    
     
+    except Exception as e:
+        logger.error(f"Erro ao gerar conteúdo: {str(e)}")
+        return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
     
     
     
@@ -145,6 +176,7 @@ def cadastrar_conteudo(request):
 
 # Visualizar Conteúdos
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def listar_conteudos(request):
     if request.method == 'GET':
         conteudos = Conteudo.objects.filter(usuario=request.user)
@@ -153,6 +185,7 @@ def listar_conteudos(request):
 
 # Cadastrar Flashcard
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def cadastrar_flashcard(request):
     if request.method == 'POST':
         serializer = FlashcardSerializer(data=request.data)
@@ -163,13 +196,24 @@ def cadastrar_flashcard(request):
 
 # Visualizar Flashcards
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def listar_flashcards(request):
-    if request.method == 'GET':
+    try:
+        # Filtra flashcards do usuário autenticado
         flashcards = Flashcard.objects.filter(usuario=request.user)
+        
+        # Verifica se flashcards são retornados
+        if not flashcards.exists():
+            return Response({"message": "Nenhum flashcard encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
         serializer = FlashcardSerializer(flashcards, many=True)
         return Response(serializer.data)
+    except Exception as e:
+        logger.error(f"Erro ao listar flashcards: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Atualizar Conteúdo
+@permission_classes([IsAuthenticated])
 @api_view(['PUT'])
 def atualizar_conteudo(request, pk):
     try:
@@ -186,6 +230,7 @@ def atualizar_conteudo(request, pk):
 
 # Excluir Conteúdo
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def excluir_conteudo(request, pk):
     try:
         conteudo = Conteudo.objects.get(pk=pk, usuario=request.user)

@@ -10,11 +10,11 @@ from .views import (
     excluir_conteudo,
     atualizar_flashcard,
     excluir_flashcard, 
-    gerar_conteudo
+    gerar_flashcard
 )
 
 urlpatterns = [
-    path('gerar-conteudo/', gerar_conteudo, name='gerar_conteudo'),
+    path('gerar_flashcard/', gerar_flashcard, name='gerar_flashcard'),
     path('register/', register_user, name='register'),
     path('login/', login_user, name='login'),
     
