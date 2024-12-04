@@ -363,3 +363,18 @@ def detalhar_flashcard(request, pk):
     except Exception as e:
         logger.error(f"Erro ao obter detalhes do flashcard {pk}: {str(e)}")
         return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def contar_flashcards(request):
+    """
+    Retorna o número total de flashcards que o usuário possui.
+    """
+    try:
+        # Contar os flashcards do usuário autenticado
+        total_flashcards = Flashcard.objects.filter(usuario=request.user).count()
+        return Response({"total_flashcards": total_flashcards}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Erro ao contar flashcards: {str(e)}")
+        return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
