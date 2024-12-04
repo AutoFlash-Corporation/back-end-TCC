@@ -347,3 +347,19 @@ def excluir_flashcard(request, pk):
         flashcard.delete()
         return Response({"message": "Flashcard excluído com sucesso"}, status=status.HTTP_204_NO_CONTENT)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def detalhar_flashcard(request, pk):
+    """
+    Endpoint para obter os detalhes de um único flashcard.
+    """
+    try:
+        # Buscar o flashcard pelo ID e validar o proprietário
+        flashcard = Flashcard.objects.get(pk=pk, usuario=request.user)
+        serializer = FlashcardSerializer(flashcard)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Flashcard.DoesNotExist:
+        return Response({"error": "Flashcard não encontrado ou não pertence ao usuário."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Erro ao obter detalhes do flashcard {pk}: {str(e)}")
+        return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

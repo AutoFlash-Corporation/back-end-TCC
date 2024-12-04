@@ -12,7 +12,8 @@ from .views import (
     excluir_flashcard, 
     gerar_flashcard,
     listar_flashcards_por_conteudo,
-    obter_um_conteudo
+    obter_um_conteudo,
+    detalhar_flashcard
 )
 
 urlpatterns = [
@@ -24,11 +25,12 @@ urlpatterns = [
     path('conteudo/lista/', listar_conteudos, name='listar_conteudos'),
     path('conteudo/<int:pk>/atualizar/', atualizar_conteudo, name='atualizar_conteudo'),
     path('conteudo/<int:pk>/excluir/', excluir_conteudo, name='excluir_conteudo'),
-    path('conteudo/lista_um/<int:conteudo_id>/', obter_um_conteudo, name='obter_um_conteudo'),
+    path('conteudo/<int:conteudo_id>/', obter_um_conteudo, name='obter_um_conteudo'),
 
     path('flashcard/', cadastrar_flashcard, name='cadastrar_flashcard'),
-    path('flashcards/conteudo/<int:conteudo_id>/', listar_flashcards_por_conteudo, name='listar_flashcards_por_conteudo'),
+    path('flashcard/conteudo/<int:conteudo_id>/', listar_flashcards_por_conteudo, name='listar_flashcards_por_conteudo'),
     path('flashcard/lista/', listar_flashcards, name='listar_flashcards'),
     path('flashcard/<int:pk>/atualizar/', atualizar_flashcard, name='atualizar_flashcard'),
+    path('flashcard/<int:pk>/', detalhar_flashcard, name='detalhar_flashcard'),
     path('flashcard/<int:pk>/excluir/', excluir_flashcard, name='excluir_flashcard'),
 ]
