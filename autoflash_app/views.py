@@ -74,6 +74,7 @@ def gerar_flashcard(request):
         """
         
          # Configurar a API da OpenAI
+         
         
         # Fazer a chamada para o modelo GPT
         response = openai.ChatCompletion.create(
@@ -138,7 +139,7 @@ def gerar_flashcard(request):
     
     
     
-      
+#---------------- login e cadastro -----------------------   
     
     
 
@@ -165,6 +166,13 @@ def login_user(request):
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+
+
+#-------------------- conteudos-------------------------
+
+
 # Cadastrar Conteúdo
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -185,6 +193,73 @@ def listar_conteudos(request):
         serializer = ConteudoSerializer(conteudos, many=True)
         return Response(serializer.data)
 
+
+# Atualizar Conteúdo
+@permission_classes([IsAuthenticated])
+@api_view(['PUT'])
+def atualizar_conteudo(request, pk):
+    try:
+        conteudo = Conteudo.objects.get(pk=pk, usuario=request.user)
+    except Conteudo.DoesNotExist:
+        return Response({"error": "Conteúdo não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = ConteudoSerializer(conteudo, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Excluir Conteúdo
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def excluir_conteudo(request, pk):
+    try:
+        conteudo = Conteudo.objects.get(pk=pk, usuario=request.user)
+    except Conteudo.DoesNotExist:
+        return Response({"error": "Conteúdo não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        conteudo.delete()
+        return Response({"message": "Conteúdo excluído com sucesso"}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Apenas usuários autenticados podem acessar
+def obter_um_conteudo(request, conteudo_id):
+    """
+    Endpoint para obter as informações detalhadas de um único conteúdo.
+    """
+    try:
+        # Busca o conteúdo pelo ID e verifica se pertence ao usuário autenticado
+        conteudo = Conteudo.objects.get(id=conteudo_id, usuario=request.user)
+        
+        # Serializa os dados do conteúdo
+        serializer = ConteudoSerializer(conteudo)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    except Conteudo.DoesNotExist:
+        # Retorna erro se o conteúdo não for encontrado ou não pertencer ao usuário
+        return Response({"error": "Conteúdo não encontrado ou não pertence ao usuário."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Erro ao obter conteúdo {conteudo_id}: {str(e)}")
+        return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+
+
+
+
+
+
+# ------------------------------ flashcards -----------------------------
+
+
 # Cadastrar Flashcard
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -195,6 +270,7 @@ def cadastrar_flashcard(request):
             serializer.save(usuario=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # Visualizar Flashcards
 @api_view(['GET'])
@@ -214,34 +290,6 @@ def listar_flashcards(request):
         logger.error(f"Erro ao listar flashcards: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Atualizar Conteúdo
-@permission_classes([IsAuthenticated])
-@api_view(['PUT'])
-def atualizar_conteudo(request, pk):
-    try:
-        conteudo = Conteudo.objects.get(pk=pk, usuario=request.user)
-    except Conteudo.DoesNotExist:
-        return Response({"error": "Conteúdo não encontrado"}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'PUT':
-        serializer = ConteudoSerializer(conteudo, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# Excluir Conteúdo
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def excluir_conteudo(request, pk):
-    try:
-        conteudo = Conteudo.objects.get(pk=pk, usuario=request.user)
-    except Conteudo.DoesNotExist:
-        return Response({"error": "Conteúdo não encontrado"}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'DELETE':
-        conteudo.delete()
-        return Response({"message": "Conteúdo excluído com sucesso"}, status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
@@ -267,6 +315,9 @@ def listar_flashcards_por_conteudo(request, conteudo_id):
         logger.error(f"Erro ao listar flashcards para o conteúdo {conteudo_id}: {str(e)}")
         return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+
 # Atualizar Flashcard
 @api_view(['PUT'])
 def atualizar_flashcard(request, pk):
@@ -281,6 +332,8 @@ def atualizar_flashcard(request, pk):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 # Excluir Flashcard
 @api_view(['DELETE'])
