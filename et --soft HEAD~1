@@ -1,0 +1,47 @@
+[33mcommit 967c5e06239ceaab6605a4e3c709489e7b9a6e00[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: ellenolv <ellendeoliveirapereira@gmail.com>
+Date:   Wed Dec 4 19:39:19 2024 -0300
+
+    função: listagem de card por conteúdo
+
+[33mcommit 142b2006a241e7a9df3e775a9520c3f9464d5462[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: ellenolv <ellendeoliveirapereira@gmail.com>
+Date:   Tue Dec 3 21:02:26 2024 -0300
+
+    Resolução de Bugs
+
+[33mcommit aff3bcdb33d84f0bfd9e3b4a73c04018b4a6f488[m
+Author: ellenolv <ellendeoliveirapereira@gmail.com>
+Date:   Tue Dec 3 20:42:05 2024 -0300
+
+    resolvido bugs
+
+[33mcommit b06ee5767ef614f4a96e15e5b6863bb85fdcdcfe[m
+Author: ellenolv <ellendeoliveirapereira@gmail.com>
+Date:   Tue Dec 3 20:36:27 2024 -0300
+
+    Resolvido bugs
+
+[33mcommit 307d7e14e7ced7f2f26cff0d79f6ac78ccf64bc4[m
+Author: ellenolv <ellendeoliveirapereira@gmail.com>
+Date:   Sat Nov 30 23:21:03 2024 -0300
+
+    Função: Gerar flashcards pela gemini
+
+[33mcommit 044e2b3ee22c3679aa511ccff1c97a706104818d[m
+Author: LeticiaRDomingues <leticiardominguescontato@gmail.com>
+Date:   Wed Nov 20 21:11:46 2024 -0300
+
+    Integração finalizada - Backend Login
+
+[33mcommit 0bd4671f6a588825e06c81ed6dcbe71c010698bc[m
+Author: LeticiaRDomingues <leticiardominguescontato@gmail.com>
+Date:   Wed Nov 20 19:33:24 2024 -0300
+
+    Ajuste Login e Cadastro
+
+[33mcommit 5e5d4b897f2eec49d20a17fbc6d613ad05e32eb3[m
+Author: ellenolv <ellendeoliveirapereira@gmail.com>
+Date:   Sat Nov 16 21:20:58 2024 -0300
+
+    CRUD (conteúdo e card) + Autenticação Login e Cadastro

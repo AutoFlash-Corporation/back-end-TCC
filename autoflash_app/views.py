@@ -75,7 +75,6 @@ def gerar_flashcard(request):
         
          # Configurar a API da OpenAI
         
-        
         # Fazer a chamada para o modelo GPT
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",  # ou "gpt-3.5-turbo"
@@ -244,6 +243,30 @@ def excluir_conteudo(request, pk):
         conteudo.delete()
         return Response({"message": "Conteúdo excluído com sucesso"}, status=status.HTTP_204_NO_CONTENT)
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def listar_flashcards_por_conteudo(request, conteudo_id):
+    try:
+        # Verifica se o conteúdo existe e pertence ao usuário
+        conteudo = Conteudo.objects.get(id=conteudo_id, usuario=request.user)
+        
+        # Filtra flashcards relacionados ao conteúdo
+        flashcards = Flashcard.objects.filter(conteudo=conteudo)
+
+        # Verifica se flashcards são encontrados
+        if not flashcards.exists():
+            return Response({"message": "Nenhum flashcard encontrado para este conteúdo."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Serializa os flashcards
+        serializer = FlashcardSerializer(flashcards, many=True)
+        return Response(serializer.data)
+    except Conteudo.DoesNotExist:
+        return Response({"error": "Conteúdo não encontrado ou não pertence ao usuário."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Erro ao listar flashcards para o conteúdo {conteudo_id}: {str(e)}")
+        return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # Atualizar Flashcard
 @api_view(['PUT'])
 def atualizar_flashcard(request, pk):
@@ -270,3 +293,4 @@ def excluir_flashcard(request, pk):
     if request.method == 'DELETE':
         flashcard.delete()
         return Response({"message": "Flashcard excluído com sucesso"}, status=status.HTTP_204_NO_CONTENT)
+
