@@ -247,6 +247,22 @@ def obter_um_conteudo(request, conteudo_id):
         logger.error(f"Erro ao obter conteúdo {conteudo_id}: {str(e)}")
         return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def contar_conteudos(request):
+    """
+    Retorna o total de conteúdos do usuário autenticado.
+    """
+    try:
+        usuario = request.user
+        total_conteudos = Conteudo.objects.filter(usuario=usuario).count()
+        
+        return Response({
+            "total_conteudos": total_conteudos,
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Erro ao contar conteúdos: {str(e)}")
+        return Response({"error": "Erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

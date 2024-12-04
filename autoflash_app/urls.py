@@ -14,7 +14,8 @@ from .views import (
     listar_flashcards_por_conteudo,
     obter_um_conteudo,
     detalhar_flashcard,
-    contar_flashcards
+    contar_flashcards,
+    contar_conteudos
 )
 
 urlpatterns = [
@@ -27,6 +28,7 @@ urlpatterns = [
     path('conteudo/<int:pk>/atualizar/', atualizar_conteudo, name='atualizar_conteudo'),
     path('conteudo/<int:pk>/excluir/', excluir_conteudo, name='excluir_conteudo'),
     path('conteudo/<int:conteudo_id>/', obter_um_conteudo, name='obter_um_conteudo'),
+    path('conteudo/contar/', contar_conteudos, name='contar_conteudos_flashcards'),
 
     path('flashcard/', cadastrar_flashcard, name='cadastrar_flashcard'),
     path('flashcard/conteudo/<int:conteudo_id>/', listar_flashcards_por_conteudo, name='listar_flashcards_por_conteudo'),
