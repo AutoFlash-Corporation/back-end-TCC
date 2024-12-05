@@ -18,7 +18,8 @@ from .views import (
     contar_conteudos,
     obter_proximo_flashcard,
     atualizar_flashcard_revisao,
-    flashcards_para_amanha
+    flashcards_para_amanha,
+    flashcards_para_hoje
 )
 
 urlpatterns = [
@@ -44,6 +45,7 @@ urlpatterns = [
     path('proximo_flashcard/<int:conteudo_id>/', obter_proximo_flashcard, name='obter_proximo_flashcard'),
     path('flashcard/<int:flashcard_id>/atualizar_revisao/', atualizar_flashcard_revisao, name='atualizar_flashcard_revisao'),
     path('flashcards-para-amanha/', flashcards_para_amanha, name='flashcards-para-amanha'),
+    path('flashcards/hoje/', flashcards_para_hoje, name='flashcards-para-hoje'),
 
 
 

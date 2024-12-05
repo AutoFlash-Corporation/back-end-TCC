@@ -491,13 +491,27 @@ def atualizar_flashcard_revisao(request, flashcard_id):
 
 
 
+
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Garantir que o usuário esteja autenticado
 def flashcards_para_amanha(request):
     # Obter a data de amanhã
     amanha = (now().date() + timedelta(days=1))
     
-    # Contar flashcards cuja data de próxima revisão é amanhã
-    flashcards_amanha = Flashcard.objects.filter(next_review=amanha)
+    # Filtrar flashcards do usuário autenticado cuja data de próxima revisão é amanhã
+    flashcards_amanha = Flashcard.objects.filter(usuario=request.user, next_review=amanha)
+    
+    # Contar o número de flashcards
     flashcards_count = flashcards_amanha.count()
     
     return Response({"flashcards_para_amanha": flashcards_count})
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Garantir que o usuário esteja autenticado
+def flashcards_para_hoje(request):
+    hoje = now().date()
+    flashcards_hoje = Flashcard.objects.filter(usuario=request.user, next_review=hoje)
+    flashcards_count = flashcards_hoje.count()
+    return Response({"flashcards_para_hoje": flashcards_count})
