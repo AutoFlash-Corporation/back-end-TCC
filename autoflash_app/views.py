@@ -490,3 +490,14 @@ def atualizar_flashcard_revisao(request, flashcard_id):
 
 
 
+
+@api_view(['GET'])
+def flashcards_para_amanha(request):
+    # Obter a data de amanhã
+    amanha = (now().date() + timedelta(days=1))
+    
+    # Contar flashcards cuja data de próxima revisão é amanhã
+    flashcards_amanha = Flashcard.objects.filter(next_review=amanha)
+    flashcards_count = flashcards_amanha.count()
+    
+    return Response({"flashcards_para_amanha": flashcards_count})
