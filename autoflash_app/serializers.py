@@ -37,4 +37,4 @@ class ConteudoSerializer(serializers.ModelSerializer):
 class FlashcardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flashcard
-        fields = ['id', 'pergunta', 'resposta', 'conteudo', 'usuario']
+        fields = ['id', 'pergunta', 'resposta', 'conteudo', 'usuario''intervalo', 'eficacia', 'next_review','usuariointervalo']

@@ -13,6 +13,10 @@ import json
 import logging
 import re
 import openai
+from datetime import date, timedelta
+
+from django.utils.timezone import now
+
 
 
 
@@ -74,7 +78,7 @@ def gerar_flashcard(request):
         """
         
          # Configurar a API da OpenAI
-         
+        
         
         # Fazer a chamada para o modelo GPT
         response = openai.ChatCompletion.create(
@@ -394,3 +398,95 @@ def contar_flashcards(request):
     except Exception as e:
         logger.error(f"Erro ao contar flashcards: {str(e)}")
         return Response({"error": "Ocorreu um erro ao processar a solicitação."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def revisar_flashcards(request):
+    """
+    Endpoint para revisar flashcards. O cliente envia o ID do flashcard e o resultado da revisão.
+    """
+    try:
+        flashcard_id = request.data.get('flashcard_id')  # ID do flashcard que está sendo revisado
+        resultado = request.data.get('resultado')  # Resultado da revisão: 'nao_lembrei', 'lembrei_dificuldade', etc.
+
+        if not flashcard_id or not resultado:
+            return Response({"error": "ID do flashcard e resultado são obrigatórios."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Buscar o flashcard
+        flashcard = Flashcard.objects.get(id=flashcard_id, usuario=request.user)
+
+        # Atualizar a revisão do flashcard
+        flashcard.atualizar_revisao(resultado)
+
+        # Retornar o próximo flashcard ou uma mensagem informando que acabou
+        flashcards_a_revisar = Flashcard.objects.filter(conteudo=flashcard.conteudo, next_review__lte=datetime.now()).order_by('next_review')
+        
+        if flashcards_a_revisar.exists():
+            proximo_flashcard = flashcards_a_revisar.first()
+            return Response({
+                "proximo_flashcard": FlashcardSerializer(proximo_flashcard).data
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Todos os flashcards foram revisados para hoje."}, status=status.HTTP_200_OK)
+
+    except Flashcard.DoesNotExist:
+        return Response({"error": "Flashcard não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obter_proximo_flashcard(request, conteudo_id):
+    """
+    Retorna o próximo flashcard a ser revisado para um conteúdo específico.
+    """
+    try:
+        usuario = request.user
+        conteudo = Conteudo.objects.get(id=conteudo_id, usuario=usuario)
+
+        # Buscar o próximo flashcard com revisão pendente
+        flashcard = Flashcard.objects.filter(
+            conteudo=conteudo,
+            usuario=usuario,
+            next_review__lte=date.today(),  # Verifica datas de revisão pendentes
+        ).order_by('next_review').first()
+
+        if not flashcard:
+            return Response({"message": "Nenhum flashcard disponível para revisão."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Serializar e retornar o flashcard
+        serializer = FlashcardSerializer(flashcard)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Conteudo.DoesNotExist:
+        return Response({"error": "Conteúdo não encontrado ou não pertence ao usuário."}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+    
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def atualizar_flashcard_revisao(request, flashcard_id):
+    
+    #Atualiza a eficácia e intervalo de um flashcard com base na resposta do usuário.
+    
+    try:
+        usuario = request.user
+        flashcard = Flashcard.objects.get(id=flashcard_id, usuario=usuario)
+
+        resultado = request.data.get("resultado")
+        if resultado not in ["nao_lembrei", "lembrei_dificuldade", "lembrei_bem", "lembrei_facilidade"]:
+            return Response({"error": "Resultado inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Atualizar o flashcard com base no resultado
+        flashcard.atualizar_revisao(resultado)
+        return Response({"message": "Flashcard atualizado com sucesso."}, status=status.HTTP_200_OK)
+    except Flashcard.DoesNotExist:
+        return Response({"error": "Flashcard não encontrado ou não pertence ao usuário."}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+
